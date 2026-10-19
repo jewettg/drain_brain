@@ -1,0 +1,9 @@
+<div class="panel"><h3>Open</h3>
+<table><tr><th>Device</th><th>Type</th><th>Opened</th><th>Ack</th></tr>
+{% for a in open_ %}<tr><td><a href="/devices/{{ a.device_id }}">{{ a.device_name }}</a></td><td>{{ a.type }}</td><td>{{ a.opened_ts | ts }}</td>
+<td>{% if a.ack_by %}{{ a.ack_by }}{% else %}<button hx-post="/ui/alerts/{{ a.id }}/ack" hx-target="#alert-lists" hx-swap="innerHTML">Acknowledge</button>{% endif %}</td></tr>
+{% else %}<tr><td colspan="4" class="muted">No open alerts.</td></tr>{% endfor %}</table></div>
+<div class="panel"><h3>Recently closed</h3>
+<table><tr><th>Device</th><th>Type</th><th>Opened</th><th>Closed</th></tr>
+{% for a in closed %}<tr><td>{{ a.device_name }}</td><td>{{ a.type }}</td><td>{{ a.opened_ts | ts }}</td><td>{{ a.closed_ts | ts }}</td></tr>
+{% else %}<tr><td colspan="4" class="muted">None.</td></tr>{% endfor %}</table></div>

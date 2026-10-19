@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>drain_brain</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--ink:#1d2430;--mut:#667085;--line:#e3e6ec;--ok:#1a7f4b;--warn:#b86e00;--bad:#c0262d;--acc:#2057c9}
+*{box-sizing:border-box}body{margin:0;font:15px/1.45 system-ui,sans-serif;background:var(--bg);color:var(--ink)}
+header{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:#fff;border-bottom:1px solid var(--line)}
+h1{font-size:18px;margin:0}main{max-width:900px;margin:0 auto;padding:16px;display:grid;gap:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px}
+.card h2{font-size:14px;text-transform:uppercase;letter-spacing:.04em;color:var(--mut);margin:0 0 10px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.kv b{display:block;font-size:20px}.kv span{color:var(--mut);font-size:12px}
+.ok{color:var(--ok)}.warn{color:var(--warn)}.bad{color:var(--bad)}
+button{font:inherit;padding:8px 12px;border:1px solid var(--acc);background:var(--acc);color:#fff;border-radius:7px;cursor:pointer}
+button.sec{background:#fff;color:var(--acc)}button.danger{background:var(--bad);border-color:var(--bad)}
+input,select,textarea{font:inherit;padding:7px;border:1px solid var(--line);border-radius:6px;width:100%}
+label{font-size:12px;color:var(--mut);display:block;margin-top:8px}.row{display:flex;gap:8px;flex-wrap:wrap;align-items:end}.row>*{flex:1;min-width:120px}
+.bar{height:14px;background:#e9edf3;border-radius:7px;overflow:hidden}.bar i{display:block;height:100%;background:var(--ok)}
+table{width:100%;border-collapse:collapse;font-size:13px}td,th{text-align:left;padding:5px 6px;border-bottom:1px solid var(--line)}
+textarea{font-family:ui-monospace,monospace;font-size:12px;min-height:200px}#msg{position:fixed;bottom:12px;left:50%;transform:translateX(-50%);background:#1d2430;color:#fff;padding:8px 14px;border-radius:8px;display:none}
+.hidden{display:none}
+</style></head><body>
+<header><h1 id="title">drain_brain</h1><span id="conn" class="warn">connecting…</span></header>
+<main>
+<section id="setup" class="card hidden"><h2>First-time setup</h2>
+ <p>Choose the Wi-Fi network this device should join, and set an API token (16+ characters; keep it, scripts and the hub need it).</p>
+ <label>Wi-Fi network (SSID)</label><input id="s_ssid"><label>Wi-Fi password</label><input id="s_pw" type="password">
+ <label>Device name</label><input id="s_name" value="drain_brain"><label>Time zone</label><select id="s_tz"></select>
+ <label>API token</label><div class="row"><input id="s_tok"><button class="sec" onclick="genTok('s_tok')">Generate</button></div>
+ <p><button onclick="provision()">Save and connect</button></p></section>
+
+<section id="login" class="card hidden"><h2>Sign in</h2><label>API token</label><input id="tok" type="password"><p><button onclick="login()">Sign in</button></p></section>
+
+<div id="app" class="hidden" style="display:none;gap:14px">
+<section class="card"><h2>Status</h2><div class="grid" id="status"></div></section>
+<section class="card"><h2>Bottle</h2><div class="bar"><i id="bbar" style="width:0"></i></div><p id="btxt"></p>
+ <div class="row"><button class="sec" onclick="resetBottle()">Bottle is full (reset)</button></div>
+ <h2 style="margin-top:14px">Calibrate flow</h2><div class="row"><div><label>Seconds run</label><input id="c_s" type="number" value="30"></div><div><label>Measured mL</label><input id="c_ml" type="number" step="0.1"></div><button class="sec" onclick="calibrate()">Save</button></div>
+ <p style="color:var(--mut);font-size:12px">Run a timed dispense into a measuring cup, then enter what you measured.</p></section>
+<section class="card"><h2>Dispense now</h2><div class="row"><div><label>Amount (mL)</label><input id="d_ml" type="number" value="5" step="0.5"></div><button onclick="dispense('ml')">Dispense mL</button>
+ <div><label>or seconds</label><input id="d_s" type="number" value="3" step="0.5"></div><button class="sec" onclick="dispense('seconds')">Run seconds</button><button class="danger" onclick="post('/dispense/cancel')">Stop</button></div></section>
+<section class="card"><h2>Schedule</h2><textarea id="sched" spellcheck="false"></textarea>
+ <div class="row" style="margin-top:8px"><button onclick="saveSched()">Save schedule</button><button class="sec" onclick="loadSched()">Reload</button></div>
+ <p style="color:var(--mut);font-size:12px">types: weekly (days: sun…sat), interval (every_days), monthly (day_of_month), once (date). amount: {"ml":n} or {"seconds":n}. Times are local to the time zone below.</p>
+ <h2>Next runs</h2><table id="next"></table></section>
+<section class="card"><h2>Events</h2><table id="events"></table></section>
+<section class="card"><h2>Settings</h2><div class="grid">
+ <div><label>Name</label><input id="f_name"></div><div><label>Time zone</label><select id="f_tz"></select></div>
+ <div><label>Drive mode</label><select id="f_mode"><option value="pulse_valve">pulse_valve</option><option value="motor_continuous">motor_continuous</option></select></div>
+ <div><label>Max dispense (s)</label><input id="f_max" type="number"></div><div><label>Button dose (s)</label><input id="f_btn" type="number" step="0.5"></div>
+ <div><label>Bottle capacity (mL)</label><input id="f_cap" type="number"></div><div><label>Flow (mL/s)</label><input id="f_flow" type="number" step="0.01"></div>
+ <div><label>Low bottle %</label><input id="f_low" type="number"></div><div><label>Battery floor %</label><input id="f_floor" type="number"></div>
+ <div><label>Webhook URL (push events)</label><input id="f_hook" placeholder="http://hub:8000/hook/&lt;id&gt;"></div>
+ <div><label>Float alarm</label><select id="f_float"><option value="true">enabled</option><option value="false">disabled</option></select></div></div>
+ <div class="row" style="margin-top:10px"><button onclick="saveCfg()">Save settings</button><button class="sec" onclick="post('/float/clear')">Clear flood alarm</button><button class="sec" onclick="if(confirm('Reboot?'))post('/reboot')">Reboot</button></div></section>
+</div></main><div id="msg"></div>
+<script>
+const TZS={"US Eastern":"EST5EDT,M3.2.0,M11.1.0","US Central":"CST6CDT,M3.2.0,M11.1.0","US Mountain":"MST7MDT,M3.2.0,M11.1.0","US Arizona (no DST)":"MST7","US Pacific":"PST8PDT,M3.2.0,M11.1.0","UTC":"UTC0"};
+const $=id=>document.getElementById(id);let tok=localStorage.getItem('db_tok')||'',cfgLoaded=false;
+for(const s of ['s_tz','f_tz'])for(const[k,v]of Object.entries(TZS))$(s).add(new Option(k+' ('+v+')',v));
+function toast(t){const m=$('msg');m.textContent=t;m.style.display='block';setTimeout(()=>m.style.display='none',2800)}
+async function api(path,opt={}){const h={'Content-Type':'application/json'};if(tok)h.Authorization='Bearer '+tok;
+ const r=await fetch('/api/v1'+path,{...opt,headers:h});let j={};try{j=await r.json()}catch(e){}
+ if(!r.ok){const e=new Error(j.error?j.error.message:r.statusText);e.status=r.status;throw e}return j}
+async function post(p,b){try{await api(p,{method:'POST',body:b?JSON.stringify(b):undefined});toast('OK');refresh()}catch(e){toast(e.message)}}
+function genTok(id){const a=new Uint8Array(16);crypto.getRandomValues(a);$(id).value=[...a].map(x=>x.toString(16).padStart(2,'0')).join('')}
+async function provision(){try{const r=await api('/provision',{method:'POST',body:JSON.stringify({ssid:$('s_ssid').value,password:$('s_pw').value,name:$('s_name').value,tz:$('s_tz').value,token:$('s_tok').value})});
+ localStorage.setItem('db_tok',$('s_tok').value);alert('Saved. The device is rebooting and joining your Wi-Fi. Keep this API token: '+$('s_tok').value+'\nFind its address on your router (host '+r.device_id+').')}catch(e){toast(e.message)}}
+function login(){tok=$('tok').value;localStorage.setItem('db_tok',tok);refresh()}
+function kv(l,v,c){return `<div class="kv"><b class="${c||''}">${v}</b><span>${l}</span></div>`}
+async function refresh(){
+ let info;try{info=await api('/info');$('conn').textContent='online';$('conn').className='ok'}catch(e){$('conn').textContent='offline';$('conn').className='bad';return}
+ $('title').textContent=info.name+' · '+info.firmware;
+ $('setup').classList.toggle('hidden',!(info.provisioning||!info.token_set));
+ if(!info.token_set){$('login').classList.add('hidden');$('app').style.display='none';return}
+ let s;try{s=await api('/status')}catch(e){if(e.status==401){$('login').classList.remove('hidden');$('app').style.display='none'}return}
+ $('login').classList.add('hidden');$('app').style.display='grid';
+ $('status').innerHTML=kv('Power',s.power=='adapter'?'Adapter':'Battery',s.power=='adapter'?'ok':'warn')+
+  kv('Battery',s.battery_pct==null?'–':s.battery_pct+'%',s.battery_level=='ok'?'':(s.battery_level=='low'?'warn':'bad'))+
+  kv('Float',s.float=='ok'?'Dry':'FLOOD',s.float=='ok'?'ok':'bad')+kv('Bottle',s.bottle.present?s.bottle.state:'missing',s.bottle.present&&s.bottle.state!='empty'?(s.bottle.state=='low'?'warn':'ok'):'bad')+
+  kv('Motor',s.motor)+kv('Mode',s.mode)+kv('Wi-Fi',s.rssi+' dBm')+kv('IP',s.ip)+kv('Clock',s.time_valid?new Date(s.time*1000).toLocaleString():'not set','')+kv('Uptime',Math.round(s.uptime_s/60)+' min');
+ $('bbar').style.width=s.bottle.pct+'%';$('btxt').textContent=`${s.bottle.remaining_ml.toFixed(0)} of ${s.bottle.capacity_ml.toFixed(0)} mL (${s.bottle.pct.toFixed(0)}%)`;
+ api('/events?since='+Math.max(0,s.event_seq-15)).then(e=>{$('events').innerHTML='<tr><th>#</th><th>time</th><th>event</th><th>data</th></tr>'+e.events.reverse().map(x=>`<tr><td>${x.seq}</td><td>${x.time_valid?new Date(x.time*1000).toLocaleString():'(clock not set)'}</td><td>${x.type}</td><td>${JSON.stringify(x.data)}</td></tr>`).join('')});
+ api('/schedule/next').then(n=>{$('next').innerHTML='<tr><th>local time</th><th>entry</th><th>amount</th></tr>'+n.runs.map(x=>`<tr><td>${x.local}</td><td>${x.entry}</td><td>${x.ml?x.ml+' mL':x.seconds+' s'}</td></tr>`).join('')});
+ if(!cfgLoaded){cfgLoaded=true;loadCfg();loadSched()}}
+async function loadCfg(){const c=await api('/config');$('f_name').value=c.name;$('f_tz').value=c.tz;if(![...$('f_tz').options].some(o=>o.value==c.tz))$('f_tz').add(new Option(c.tz,c.tz,true,true));
+ $('f_mode').value=c.drive_mode;$('f_max').value=c.max_dispense_seconds;$('f_btn').value=c.button_dose_seconds;$('f_cap').value=c.capacity_ml;$('f_flow').value=c.flow_ml_per_s;$('f_low').value=c.low_percent;$('f_floor').value=c.battery_floor_pct;$('f_hook').value=c.webhook;$('f_float').value=String(c.float_enabled)}
+async function saveCfg(){try{await api('/config',{method:'PUT',body:JSON.stringify({name:$('f_name').value,tz:$('f_tz').value,drive_mode:$('f_mode').value,max_dispense_seconds:+$('f_max').value,button_dose_seconds:+$('f_btn').value,capacity_ml:+$('f_cap').value,flow_ml_per_s:+$('f_flow').value,low_percent:+$('f_low').value,battery_floor_pct:+$('f_floor').value,webhook:$('f_hook').value,float_enabled:$('f_float').value=='true'})});toast('Saved');refresh()}catch(e){toast(e.message)}}
+async function loadSched(){$('sched').value=JSON.stringify(await api('/schedule'),null,2)}
+async function saveSched(){try{await api('/schedule',{method:'PUT',body:$('sched').value});toast('Schedule saved');loadSched();refresh()}catch(e){toast(e.message)}}
+function dispense(k){post('/dispense',k=='ml'?{ml:+$('d_ml').value}:{seconds:+$('d_s').value})}
+function resetBottle(){if(confirm('Mark the bottle as full?'))post('/bottle/reset')}
+function calibrate(){post('/calibration',{seconds:+$('c_s').value,measured_ml:+$('c_ml').value})}
+refresh();setInterval(refresh,5000);
+</script></body></html>

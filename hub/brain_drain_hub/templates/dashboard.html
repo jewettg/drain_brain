@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block body %}
+<h2>Fleet</h2>
+<div class="grid" hx-get="/fragments/fleet" hx-trigger="every 5s" hx-swap="innerHTML">
+  {% include "_cards.html" %}
+</div>
+<div class="panel" style="margin-top:1rem">
+  <h3>Add device</h3>
+  {% if error %}<p class="msg-err">{{ error }}</p>{% endif %}
+  <form class="inline" method="post" action="/ui/devices">
+    <input name="name" placeholder="Name (optional)">
+    <input name="address" placeholder="Address, e.g. 192.168.1.50:80" required>
+    <input name="token" type="password" placeholder="Device token" required>
+    <button>Add</button>
+  </form>
+</div>
+{% endblock %}

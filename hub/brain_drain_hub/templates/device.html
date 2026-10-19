@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block body %}
+<p><a href="/">&larr; Fleet</a></p>
+<div hx-get="/fragments/device/{{ dev.id }}" hx-trigger="every 5s" hx-swap="innerHTML">
+  {% include "_device_live.html" %}
+</div>
+<div class="panel">
+  <h3>Controls</h3>
+  <form class="inline" hx-post="/ui/devices/{{ dev.id }}/dispense" hx-target="#cmd-msg">
+    <input name="ml" type="number" step="0.1" min="0.1" value="10" style="width:7rem"> mL
+    <button>Dispense now</button>
+  </form>
+  <p></p>
+  <form class="inline" hx-post="/ui/devices/{{ dev.id }}/bottle_reset" hx-target="#cmd-msg"
+        hx-confirm="Mark the bottle as full?">
+    <button class="secondary">Bottle reset (new full bottle)</button>
+  </form>
+  <p id="cmd-msg"></p>
+</div>
+<div class="panel">
+  <h3>Schedule (JSON)</h3>
+  <form hx-post="/ui/devices/{{ dev.id }}/schedule" hx-target="#sched-msg">
+    <textarea name="schedule" rows="10">{{ schedule }}</textarea>
+    <p><button>Save schedule</button> <span id="sched-msg"></span></p>
+  </form>
+</div>
+<form method="post" action="/ui/devices/{{ dev.id }}/delete" onsubmit="return confirm('Remove this device from the hub?')">
+  <button class="danger">Remove device</button>
+</form>
+{% endblock %}

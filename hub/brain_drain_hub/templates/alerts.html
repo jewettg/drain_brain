@@ -1,0 +1,5 @@
+{% extends "base.html" %}
+{% block body %}
+<h2>Alerts</h2>
+<div id="alert-lists" hx-get="/alerts/fragment" hx-trigger="every 10s" hx-swap="innerHTML">{% include "_alert_lists.html" %}</div>
+{% endblock %}

@@ -1,0 +1,19 @@
+{% for d in devices %}
+<a class="card {{ d.state }}" href="/devices/{{ d.id }}">
+  <h3>{{ d.name }}</h3>
+  {% if not d.online %}
+    <div class="row"><span>Offline</span><span>last seen {{ d.last_seen | ts }}</span></div>
+  {% else %}
+    {% set b = d.status.get('bottle') or {} %}
+    <div class="row"><span>Online</span>
+      <span>{% if d.status.get('power') == 'battery' %}<span class="pill warn">on battery</span>{% else %}adapter{% endif %}</span></div>
+    <div class="row"><span>Battery</span><span>{{ d.status.get('battery_pct', '-') }}%</span></div>
+    <div class="row"><span>Bottle</span><span>{% if b.get('present', True) %}{{ b.get('remaining_ml', '-') }} mL ({{ b.get('pct', '-') }}%){% else %}removed{% endif %}</span></div>
+    <div class="gauge"><div style="width:{{ b.get('pct', 0) }}%"></div></div>
+    <div class="row"><span>Float</span>
+      <span>{% if d.status.get('float') == 'alarm' %}<span class="pill alarm">ALARM</span>{% else %}ok{% endif %}</span></div>
+  {% endif %}
+</a>
+{% else %}
+<p class="muted">No devices yet. Add one below.</p>
+{% endfor %}

@@ -1,0 +1,16 @@
+build/
+sdkconfig
+sdkconfig.old
+managed_components/
+dependencies.lock
+.venv/
+__pycache__/
+*.pyc
+*.egg-info/
+.pytest_cache/
+.DS_Store
+# third-party firmware images and decompiler output are never committed
+ota_*.bin
+esp32_dump*.bin
+resolved.c
+all_decomp.c

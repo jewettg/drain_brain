@@ -6,7 +6,13 @@ The goal is a ground-up rewrite that uses only hardware facts discovered from th
 and float/power/bottle monitoring. No cloud, no vendor registration, no phone app. A separate fleet controller, **brain_drain_hub**,
 manages many devices.
 
-Status: reverse-engineering of the hardware interface is done (not yet bench-verified); firmware implementation has not started.
+Status:
+
+- Hardware interface reverse-engineered from the stock firmware, **not yet bench-verified**.
+- `tools/bringup_probe/`: ESP-IDF probe plus a prebuilt image for whoever holds the device; start with
+  [BRINGUP_INSTRUCTIONS.md](documentation/BRINGUP_INSTRUCTIONS.md).
+- `firmware/`: first slice of the real firmware (schedule engine and bottle model host-tested; the rest builds but has not run on hardware).
+- `hub/`: brain_drain_hub with a device simulator; 14 tests pass.
 
 ## Documentation
 
@@ -15,6 +21,9 @@ Status: reverse-engineering of the hardware interface is done (not yet bench-ver
 | [documentation/HARDWARE_MAP.md](documentation/HARDWARE_MAP.md) | GPIO map, polarity, motor/valve drive, battery, buttons, open items |
 | [documentation/FIRMWARE_PLAN.md](documentation/FIRMWARE_PLAN.md) | Architecture, Phase 0 bring-up probe, scheduling/time, REST API, milestones |
 | [documentation/HUB_PLAN.md](documentation/HUB_PLAN.md) | brain_drain_hub plan |
+| [documentation/BRINGUP_INSTRUCTIONS.md](documentation/BRINGUP_INSTRUCTIONS.md) | Step-by-step for the person with the device (hand this out with the probe) |
+| [firmware/README.md](firmware/README.md) | Firmware status, API quick start, what is not done |
+| [hub/README.md](hub/README.md) | Hub install, simulator, tests |
 | [tools/re/README.md](tools/re/README.md) | How the firmware analysis was done (no firmware or decompiled code is stored here) |
 
 ## Notes

@@ -1,0 +1,22 @@
+{% set st = dev.status %}{% set b = st.get('bottle') or {} %}
+<div class="panel">
+  <div class="row"><strong>{{ dev.name }}</strong>
+    <span>{% if dev.online %}<span class="pill">online</span>{% else %}<span class="pill warn">offline</span>{% endif %}</span></div>
+  <p class="muted">{{ dev.address }} · uid {{ dev.uid or '-' }} · firmware {{ dev.fw_version or '-' }} · last seen {{ dev.last_seen | ts }}</p>
+  {% for a in open_alerts %}<span class="pill {{ 'alarm' if a.type == 'float_alarm' else 'warn' }}">{{ a.type }}</span> {% endfor %}
+  {% if st %}
+  <table>
+    <tr><th>Power</th><td>{{ st.get('power') }}</td><th>Battery</th><td>{{ st.get('battery_pct') }}%</td></tr>
+    <tr><th>Float</th><td>{{ st.get('float') }}</td><th>Motor</th><td>{{ st.get('motor') }}</td></tr>
+    <tr><th>Bottle</th><td colspan="3">{% if b.get('present', True) %}{{ b.get('remaining_ml') }} / {{ b.get('capacity_ml') }} mL ({{ b.get('pct') }}%){% else %}removed{% endif %}
+      <div class="gauge"><div style="width:{{ b.get('pct', 0) }}%"></div></div></td></tr>
+    <tr><th>Uptime</th><td>{{ st.get('uptime_s') }} s</td><th>RSSI</th><td>{{ st.get('rssi') }}</td></tr>
+  </table>
+  {% endif %}
+</div>
+<div class="panel">
+  <h3>Events</h3>
+  <table><tr><th>Seq</th><th>Time</th><th>Type</th><th>Data</th></tr>
+  {% for e in events %}<tr><td>{{ e.seq }}</td><td>{{ e.ts | ts }}</td><td>{{ e.type }}</td><td class="muted">{{ e.data_json }}</td></tr>
+  {% else %}<tr><td colspan="4" class="muted">No events yet.</td></tr>{% endfor %}</table>
+</div>
